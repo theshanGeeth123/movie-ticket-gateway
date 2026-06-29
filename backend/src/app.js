@@ -7,6 +7,8 @@ import roleTestRoutes from "./routes/roleTestRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import movieRoutes from "./routes/movieRoutes.js";
 import hallRoutes from "./routes/hallRoutes.js";
+import showtimeRoutes from "./routes/showtimeRoutes.js";
+import bookingRoutes from "./routes/bookingRoutes.js";
 
 const app = express();
 
@@ -34,6 +36,8 @@ app.use("/api/role-test", roleTestRoutes);
 app.use("/api/admin/users", adminUserRoutes);
 app.use("/api/movies", movieRoutes);
 app.use("/api/halls", hallRoutes);
+app.use("/api/showtimes", showtimeRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
