@@ -5,6 +5,8 @@ import healthRoutes from "./routes/healthRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 import roleTestRoutes from "./routes/roleTestRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
+import movieRoutes from "./routes/movieRoutes.js";
+import hallRoutes from "./routes/hallRoutes.js";
 
 const app = express();
 
@@ -30,6 +32,8 @@ app.use("/api/health", healthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/role-test", roleTestRoutes);
 app.use("/api/admin/users", adminUserRoutes);
+app.use("/api/movies", movieRoutes);
+app.use("/api/halls", hallRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
