@@ -113,8 +113,32 @@ const bookingSchema = new mongoose.Schema(
 
     paymentStatus: {
       type: String,
-      enum: ["unpaid", "paid", "failed", "refunded"],
+      enum: ["unpaid", "processing", "paid", "failed", "refunded"],
       default: "unpaid",
+    },
+
+    paymentProvider: {
+      type: String,
+      enum: ["stripe", "cash", "none"],
+      default: "none",
+    },
+
+    stripePaymentIntentId: {
+      type: String,
+      trim: true,
+    },
+
+    stripePaymentIntentStatus: {
+      type: String,
+      trim: true,
+    },
+
+    paymentCreatedAt: {
+      type: Date,
+    },
+
+    paidAt: {
+      type: Date,
     },
 
     reservationExpiresAt: {
@@ -140,6 +164,7 @@ bookingSchema.index({ showtime: 1 });
 bookingSchema.index({ bookingStatus: 1 });
 bookingSchema.index({ paymentStatus: 1 });
 bookingSchema.index({ reservationExpiresAt: 1 });
+bookingSchema.index({ stripePaymentIntentId: 1 });
 
 const Booking = mongoose.model("Booking", bookingSchema);
 
