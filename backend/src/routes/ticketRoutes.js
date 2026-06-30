@@ -7,6 +7,10 @@ import {
   getSingleTicket,
   getTicketByBooking,
   cancelTicket,
+  downloadTicketPdf,
+  sendTicketEmailManually,
+  verifyTicket,
+  markTicketAsUsed,
 } from "../controllers/ticketController.js";
 
 import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
@@ -41,6 +45,12 @@ router.patch(
   cancelTicket
 );
 
+router.post(
+  "/verify",
+  authorizeRoles("admin", "staff"),
+  verifyTicket
+);
+
 /*
 |--------------------------------------------------------------------------
 | Shared routes
@@ -50,6 +60,24 @@ router.get(
   "/booking/:bookingId",
   authorizeRoles("customer", "admin", "staff"),
   getTicketByBooking
+);
+
+router.get(
+  "/:id/download",
+  authorizeRoles("customer", "admin", "staff"),
+  downloadTicketPdf
+);
+
+router.post(
+  "/:id/email",
+  authorizeRoles("customer", "admin", "staff"),
+  sendTicketEmailManually
+);
+
+router.patch(
+  "/:id/mark-used",
+  authorizeRoles("admin", "staff"),
+  markTicketAsUsed
 );
 
 router.get(

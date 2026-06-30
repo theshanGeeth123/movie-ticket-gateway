@@ -3,6 +3,7 @@ import Booking from "../models/Booking.js";
 import Showtime from "../models/Showtime.js";
 import { releaseExpiredReservations } from "./bookingController.js";
 import { createTicketForBooking } from "../services/ticketService.js";
+import { sendTicketEmail } from "../services/ticketEmailService.js";
 
 const zeroDecimalCurrencies = [
     "bif",
@@ -417,10 +418,23 @@ export const confirmDemoPayment = async (req, res) => {
             },
         ]);
 
+        let emailResult = null;
+
+        try {
+            emailResult = await sendTicketEmail(ticket._id);
+        } catch (emailError) {
+            console.error("Ticket email sending failed:", emailError.message);
+
+            emailResult = {
+                sent: false,
+                error: emailError.message,
+            };
+        }
+
         return res.status(200).json({
             success: true,
             message:
-                "Demo payment confirmed successfully. Booking is confirmed and ticket generated.",
+                "Demo payment confirmed successfully. Booking is confirmed, ticket generated, and email process completed.",
             payment: {
                 paymentIntentId: paymentIntent.id,
                 status: paymentIntent.status,
@@ -429,6 +443,7 @@ export const confirmDemoPayment = async (req, res) => {
             },
             booking: updatedBooking,
             ticket: populatedTicket,
+            email: emailResult,
         });
     } catch (error) {
         console.error("Confirm demo payment error:", error);

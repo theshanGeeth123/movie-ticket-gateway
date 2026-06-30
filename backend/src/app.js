@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -12,34 +13,32 @@ import showtimeRoutes from "./routes/showtimeRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
 import ticketRoutes from "./routes/ticketRoutes.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 
+import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
 
 const app = express();
 
+const allowedOrigins = [
+  process.env.CLIENT_URL || "http://localhost:5173",
+  "http://localhost:5173",
+];
+
 app.use(
   cors({
-    origin: process.env.CLIENT_URL,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked for origin: ${origin}`));
+    },
     credentials: true,
   })
 );
 
-/*
-|--------------------------------------------------------------------------
-| Stripe Webhook Route
-|--------------------------------------------------------------------------
-| IMPORTANT:
-| This route must be before express.json().
-| Stripe needs raw body to verify webhook signature.
-*/
-
-
-/*
-|--------------------------------------------------------------------------
-| Normal Middlewares
-|--------------------------------------------------------------------------
-*/
 app.use(express.json({ limit: "10mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cookieParser());
 
 app.get("/", (req, res) => {
@@ -59,12 +58,9 @@ app.use("/api/showtimes", showtimeRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/dashboard", dashboardRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({
-    success: false,
-    message: `Route not found: ${req.originalUrl}`,
-  });
-});
+app.use(notFound);
+app.use(errorHandler);
 
 export default app;
