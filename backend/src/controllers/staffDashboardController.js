@@ -112,7 +112,7 @@ export const getStaffDashboardSummary = async (req, res) => {
         $lte: todayEnd,
       },
     })
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType totalSeats")
       .sort({ startTime: 1 })
       .limit(10);
@@ -124,7 +124,7 @@ export const getStaffDashboardSummary = async (req, res) => {
         $gte: todayStart,
       },
     })
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType totalSeats")
       .sort({ showDate: 1, startTime: 1 })
       .limit(10);
@@ -133,7 +133,7 @@ export const getStaffDashboardSummary = async (req, res) => {
       ticketStatus: "used",
     })
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("checkedBy", "name email role")
@@ -144,7 +144,7 @@ export const getStaffDashboardSummary = async (req, res) => {
       ticketStatus: "active",
     })
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .sort({ createdAt: -1 })
@@ -198,7 +198,7 @@ export const getStaffTodayShowtimes = async (req, res) => {
         $lte: end,
       },
     })
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType totalSeats")
       .sort({ startTime: 1 });
 
@@ -255,7 +255,7 @@ export const getStaffTicketVerificationReport = async (req, res) => {
 
     const tickets = await Ticket.find(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("checkedBy", "name email role")
@@ -327,7 +327,7 @@ export const getMyTicketCheckHistory = async (req, res) => {
 
     const tickets = await Ticket.find(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("checkedBy", "name email role")

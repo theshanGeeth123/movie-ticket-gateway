@@ -10,8 +10,8 @@ const seatSchema = new mongoose.Schema(
     seatCode: {
       type: String,
       required: true,
-      uppercase: true,
       trim: true,
+      uppercase: true,
     },
 
     seatType: {
@@ -33,8 +33,8 @@ const seatRowSchema = new mongoose.Schema(
     rowLabel: {
       type: String,
       required: true,
-      uppercase: true,
       trim: true,
+      uppercase: true,
     },
 
     seats: [seatSchema],
@@ -61,14 +61,13 @@ const hallSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Total rows are required"],
       min: [1, "Total rows must be at least 1"],
-      max: [26, "Maximum 26 rows are allowed"],
+      max: [26, "Total rows cannot exceed 26"],
     },
 
     seatsPerRow: {
       type: Number,
       required: [true, "Seats per row are required"],
       min: [1, "Seats per row must be at least 1"],
-      max: [50, "Maximum 50 seats per row are allowed"],
     },
 
     totalSeats: {
@@ -76,14 +75,14 @@ const hallSchema = new mongoose.Schema(
       default: 0,
     },
 
-    seatLayout: [seatRowSchema],
-
     facilities: [
       {
         type: String,
         trim: true,
       },
     ],
+
+    seatLayout: [seatRowSchema],
 
     isActive: {
       type: Boolean,
@@ -108,14 +107,14 @@ const hallSchema = new mongoose.Schema(
 const generateSeatLayout = (totalRows, seatsPerRow) => {
   const layout = [];
 
-  for (let i = 0; i < totalRows; i++) {
-    const rowLabel = String.fromCharCode(65 + i);
+  for (let rowIndex = 0; rowIndex < totalRows; rowIndex += 1) {
+    const rowLabel = String.fromCharCode(65 + rowIndex);
     const seats = [];
 
-    for (let j = 1; j <= seatsPerRow; j++) {
+    for (let seatIndex = 1; seatIndex <= seatsPerRow; seatIndex += 1) {
       seats.push({
-        seatNumber: j,
-        seatCode: `${rowLabel}${j}`,
+        seatNumber: seatIndex,
+        seatCode: `${rowLabel}${seatIndex}`,
         seatType: "regular",
         isActive: true,
       });
@@ -130,20 +129,26 @@ const generateSeatLayout = (totalRows, seatsPerRow) => {
   return layout;
 };
 
-hallSchema.pre("validate", function (next) {
-  if (
+hallSchema.pre("validate", function () {
+  if (!this.totalRows || !this.seatsPerRow) {
+    return;
+  }
+
+  this.totalSeats = Number(this.totalRows) * Number(this.seatsPerRow);
+
+  const shouldGenerateSeatLayout =
     this.isNew ||
     this.isModified("totalRows") ||
     this.isModified("seatsPerRow") ||
-    !this.seatLayout ||
-    this.seatLayout.length === 0
-  ) {
-    this.seatLayout = generateSeatLayout(this.totalRows, this.seatsPerRow);
+    !Array.isArray(this.seatLayout) ||
+    this.seatLayout.length === 0;
+
+  if (shouldGenerateSeatLayout) {
+    this.seatLayout = generateSeatLayout(
+      Number(this.totalRows),
+      Number(this.seatsPerRow)
+    );
   }
-
-  this.totalSeats = this.totalRows * this.seatsPerRow;
-
-  next();
 });
 
 const Hall = mongoose.model("Hall", hallSchema);

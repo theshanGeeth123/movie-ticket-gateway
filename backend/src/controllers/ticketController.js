@@ -74,7 +74,7 @@ export const generateTicketManually = async (req, res) => {
 
     const populatedTicket = await Ticket.findById(ticket._id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("booking", "bookingReference bookingStatus paymentStatus");
@@ -114,7 +114,7 @@ export const getMyTickets = async (req, res) => {
     const total = await Ticket.countDocuments(query);
 
     const tickets = await Ticket.find(query)
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("booking", "bookingReference bookingStatus paymentStatus")
@@ -169,7 +169,7 @@ export const getAllTickets = async (req, res) => {
 
     const tickets = await Ticket.find(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .populate("booking", "bookingReference bookingStatus paymentStatus")
@@ -200,7 +200,7 @@ export const getSingleTicket = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language description")
+      .populate("movie", "title mainImage galleryImages genre language description")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(
@@ -246,7 +246,7 @@ export const getTicketByBooking = async (req, res) => {
   try {
     const ticket = await Ticket.findOne({ booking: req.params.bookingId })
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(
@@ -338,7 +338,7 @@ export const downloadTicketPdf = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language description")
+      .populate("movie", "title mainImage galleryImages genre language description")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(
@@ -488,7 +488,7 @@ export const verifyTicket = async (req, res) => {
 
     const ticket = await Ticket.findOne(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(
@@ -527,7 +527,7 @@ export const markTicketAsUsed = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(
@@ -579,7 +579,7 @@ export const markTicketAsUsed = async (req, res) => {
 
     const updatedTicket = await Ticket.findById(ticket._id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate(

@@ -244,7 +244,7 @@ export const reserveSeats = async (req, res) => {
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice");
 
@@ -289,7 +289,7 @@ export const getMyBookings = async (req, res) => {
     const total = await Booking.countDocuments(query);
 
     const bookings = await Booking.find(query)
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .sort({ createdAt: -1 })
@@ -347,7 +347,7 @@ export const getAllBookings = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .sort({ createdAt: -1 })
@@ -379,7 +379,7 @@ export const getSingleBooking = async (req, res) => {
 
     const booking = await Booking.findById(req.params.id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice");
 
@@ -467,7 +467,7 @@ export const cancelPendingBooking = async (req, res) => {
 
     const populatedBooking = await Booking.findById(booking._id)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice");
 

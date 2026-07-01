@@ -25,7 +25,7 @@ const formatDate = (dateValue) => {
 export const sendTicketEmail = async (ticketId) => {
   const ticket = await Ticket.findById(ticketId)
     .populate("customer", "name email role")
-    .populate("movie", "title poster genre language")
+    .populate("movie", "title mainImage galleryImages genre language")
     .populate("hall", "name screenType")
     .populate("showtime", "showDate startTime endTime finalTicketPrice")
     .populate("booking", "bookingReference bookingStatus paymentStatus");

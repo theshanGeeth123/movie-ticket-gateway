@@ -150,7 +150,7 @@ const showtimeSchema = new mongoose.Schema(
   }
 );
 
-showtimeSchema.pre("save", function (next) {
+showtimeSchema.pre("validate", function () {
   this.finalTicketPrice =
     Number(this.baseTicketPrice || 0) + Number(this.threeDGlassesFee || 0);
 
@@ -160,26 +160,28 @@ showtimeSchema.pre("save", function (next) {
   let reservedSeats = 0;
   let blockedSeats = 0;
 
-  this.seatAvailability.forEach((row) => {
-    row.seats.forEach((seat) => {
-      totalSeats += 1;
+  if (Array.isArray(this.seatAvailability)) {
+    this.seatAvailability.forEach((row) => {
+      if (!Array.isArray(row.seats)) return;
 
-      if (seat.status === "available") availableSeats += 1;
-      if (seat.status === "booked") bookedSeats += 1;
-      if (seat.status === "reserved") reservedSeats += 1;
-      if (seat.status === "blocked") blockedSeats += 1;
+      row.seats.forEach((seat) => {
+        totalSeats += 1;
 
-      seat.price = this.finalTicketPrice;
+        if (seat.status === "available") availableSeats += 1;
+        if (seat.status === "booked") bookedSeats += 1;
+        if (seat.status === "reserved") reservedSeats += 1;
+        if (seat.status === "blocked") blockedSeats += 1;
+
+        seat.price = this.finalTicketPrice;
+      });
     });
-  });
+  }
 
   this.totalSeats = totalSeats;
   this.availableSeats = availableSeats;
   this.bookedSeats = bookedSeats;
   this.reservedSeats = reservedSeats;
   this.blockedSeats = blockedSeats;
-
-  next();
 });
 
 const Showtime = mongoose.model("Showtime", showtimeSchema);

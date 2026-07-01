@@ -104,7 +104,7 @@ export const getCustomerDashboardSummary = async (req, res) => {
       bookingStatus: "confirmed",
       paymentStatus: "paid",
     })
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate({
         path: "showtime",
@@ -125,7 +125,7 @@ export const getCustomerDashboardSummary = async (req, res) => {
     const latestBookings = await Booking.find({
       customer: customerId,
     })
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .sort({ createdAt: -1 })
@@ -134,7 +134,7 @@ export const getCustomerDashboardSummary = async (req, res) => {
     const latestTickets = await Ticket.find({
       customer: customerId,
     })
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate("booking", "bookingReference bookingStatus paymentStatus")
@@ -217,7 +217,7 @@ export const getCustomerBookingHistory = async (req, res) => {
     const total = await Booking.countDocuments(query);
 
     const bookings = await Booking.find(query)
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .sort({ createdAt: -1 })
@@ -262,7 +262,7 @@ export const getCustomerTicketHistory = async (req, res) => {
     const total = await Ticket.countDocuments(query);
 
     const tickets = await Ticket.find(query)
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime finalTicketPrice")
       .populate("booking", "bookingReference bookingStatus paymentStatus")
@@ -300,7 +300,7 @@ export const getCustomerUpcomingShowtimes = async (req, res) => {
         $gte: todayStart,
       },
     })
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType")
       .sort({ showDate: 1, startTime: 1 })
       .limit(20);

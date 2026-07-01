@@ -49,6 +49,7 @@ export const releaseExpiredReservations = async () => {
       booking.bookingStatus = "expired";
       booking.paymentStatus =
         booking.paymentStatus === "processing" ? "failed" : booking.paymentStatus;
+      booking.cancelledAt = new Date();
 
       await booking.save({ validateBeforeSave: false });
 

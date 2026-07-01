@@ -204,7 +204,7 @@ export const createShowtime = async (req, res) => {
     });
 
     const populatedShowtime = await Showtime.findById(showtime._id)
-      .populate("movie", "title mainImage poster genre language duration isActive")
+      .populate("movie", "title mainImage galleryImages genre language duration isActive")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats")
       .populate("createdBy", "name email role");
 
@@ -263,7 +263,7 @@ export const getAllShowtimes = async (req, res) => {
     const skip = (currentPage - 1) * pageSize;
 
     let showtimes = await Showtime.find(query)
-      .populate("movie", "title mainImage poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType")
       .populate("createdBy", "name email role")
       .populate("updatedBy", "name email role")
@@ -311,7 +311,7 @@ export const getAllShowtimes = async (req, res) => {
 export const getSingleShowtime = async (req, res) => {
   try {
     const showtime = await Showtime.findById(req.params.id)
-      .populate("movie", "title mainImage poster genre language duration description")
+      .populate("movie", "title mainImage galleryImages genre language duration description")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats")
       .populate("createdBy", "name email role")
       .populate("updatedBy", "name email role");
@@ -360,7 +360,7 @@ export const getPublicShowtimes = async (req, res) => {
     }
 
     const showtimes = await Showtime.find(query)
-      .populate("movie", "title mainImage poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType")
       .sort({ showDate: 1, startTime: 1 });
 
@@ -387,7 +387,7 @@ export const getPublicShowtimeDetails = async (req, res) => {
       isActive: true,
       status: "scheduled",
     })
-      .populate("movie", "title mainImage poster genre language duration description")
+      .populate("movie", "title mainImage galleryImages genre language duration description")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats");
 
     if (!showtime) {
@@ -576,7 +576,7 @@ export const updateShowtime = async (req, res) => {
     await showtime.save();
 
     const updatedShowtime = await Showtime.findById(showtime._id)
-      .populate("movie", "title mainImage poster genre language duration")
+      .populate("movie", "title mainImage galleryImages genre language duration")
       .populate("hall", "name screenType")
       .populate("updatedBy", "name email role");
 

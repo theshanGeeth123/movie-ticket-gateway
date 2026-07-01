@@ -231,7 +231,7 @@ export const getAdminDashboardSummary = async (req, res) => {
           _id: 0,
           movieId: "$_id",
           title: "$movie.title",
-          poster: "$movie.poster",
+          mainImage: "$movie.mainImage",
           genre: "$movie.genre",
           language: "$movie.language",
           totalBookings: 1,
@@ -248,14 +248,14 @@ export const getAdminDashboardSummary = async (req, res) => {
         $gte: todayStart,
       },
     })
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .sort({ showDate: 1, startTime: 1 })
       .limit(5);
 
     const latestBookings = await Booking.find()
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .sort({ createdAt: -1 })
@@ -463,7 +463,7 @@ export const getBookingReport = async (req, res) => {
 
     const bookings = await Booking.find(query)
       .populate("customer", "name email role")
-      .populate("movie", "title poster genre language")
+      .populate("movie", "title mainImage galleryImages genre language")
       .populate("hall", "name screenType")
       .populate("showtime", "showDate startTime endTime")
       .sort({ createdAt: -1 })
@@ -541,7 +541,7 @@ export const getMoviePerformanceReport = async (req, res) => {
           _id: 0,
           movieId: "$_id",
           title: "$movie.title",
-          poster: "$movie.poster",
+          mainImage: "$movie.mainImage",
           genre: "$movie.genre",
           language: "$movie.language",
           totalBookings: 1,

@@ -1,0 +1,12 @@
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { CreditCard, Film, Ticket } from "lucide-react";
+import api from "../../api/axios";
+import Card from "../../components/ui/Card";
+import Loading from "../../components/ui/Loading";
+import PageHeader from "../../components/ui/PageHeader";
+import StatusBadge from "../../components/ui/StatusBadge";
+import { getErrorMessage, money, showTimeLabel } from "../../utils/formatters";
+
+const CustomerDashboardPage=()=>{const[data,setData]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState("");useEffect(()=>{(async()=>{try{const{data}=await api.get("/dashboard/customer/summary");setData(data);}catch(e){setError(getErrorMessage(e,"Failed to load dashboard"));}finally{setLoading(false);}})();},[]); if(loading)return <Loading/>; if(error)return <div className="text-red-200">{error}</div>; const s=data?.summary||{}; return <><PageHeader title="Customer Dashboard" subtitle="Manage your bookings and tickets." action={<Link to="/movies" className="rounded-2xl bg-red-600 px-5 py-3 font-bold hover:bg-red-700">Browse movies</Link>}/><div className="grid gap-5 sm:grid-cols-3"><Card title="Bookings" value={s.bookings?.totalBookings||0} icon={CreditCard} subtitle={`${s.bookings?.confirmedBookings||0} confirmed`}/><Card title="Tickets" value={s.tickets?.totalTickets||0} icon={Ticket} subtitle={`${s.tickets?.activeTickets||0} active`}/><Card title="Total spent" value={money(s.spending?.totalSpent)} icon={Film} subtitle={`${s.spending?.totalTicketsPurchased||0} tickets purchased`}/></div><section className="mt-8 grid gap-5 lg:grid-cols-2"><Card><h2 className="mb-4 text-xl font-black">Upcoming bookings</h2><div className="space-y-3">{(data.upcomingBookings||[]).map((b)=><div key={b._id} className="rounded-2xl bg-slate-950/70 p-4"><p className="font-bold">{b.movie?.title}</p><p className="text-sm text-slate-400">{showTimeLabel(b.showtime)} · {b.seats?.map(s=>s.seatCode).join(", ")}</p><StatusBadge value={b.bookingStatus}/></div>)}</div></Card><Card><h2 className="mb-4 text-xl font-black">Latest tickets</h2><div className="space-y-3">{(data.latestTickets||[]).map((t)=><Link to={`/tickets/${t._id}`} key={t._id} className="block rounded-2xl bg-slate-950/70 p-4 hover:bg-slate-900"><p className="font-bold">{t.ticketNumber}</p><p className="text-sm text-slate-400">{t.movie?.title}</p></Link>)}</div></Card></section></>};
+export default CustomerDashboardPage;
