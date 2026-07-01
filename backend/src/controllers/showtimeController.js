@@ -1,6 +1,7 @@
 import Showtime from "../models/Showtime.js";
 import Movie from "../models/Movie.js";
 import Hall from "../models/Hall.js";
+import Booking from "../models/Booking.js";
 
 const isValidTimeFormat = (time) => {
   return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
@@ -17,6 +18,10 @@ const getDayRange = (dateValue) => {
 };
 
 const generateShowtimeSeats = (hall, finalTicketPrice) => {
+  if (!hall?.seatLayout || !Array.isArray(hall.seatLayout)) {
+    return [];
+  }
+
   return hall.seatLayout.map((row) => ({
     rowLabel: row.rowLabel,
     seats: row.seats.map((seat) => ({
@@ -30,6 +35,10 @@ const generateShowtimeSeats = (hall, finalTicketPrice) => {
 };
 
 const hasBookedOrReservedSeats = (showtime) => {
+  if (!showtime?.seatAvailability || !Array.isArray(showtime.seatAvailability)) {
+    return false;
+  }
+
   return showtime.seatAvailability.some((row) =>
     row.seats.some(
       (seat) => seat.status === "booked" || seat.status === "reserved"
@@ -105,6 +114,23 @@ export const createShowtime = async (req, res) => {
       });
     }
 
+    const parsedBaseTicketPrice = Number(baseTicketPrice);
+    const parsedThreeDGlassesFee = Number(threeDGlassesFee || 0);
+
+    if (Number.isNaN(parsedBaseTicketPrice) || parsedBaseTicketPrice < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Base ticket price must be a valid positive number",
+      });
+    }
+
+    if (Number.isNaN(parsedThreeDGlassesFee) || parsedThreeDGlassesFee < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "3D glasses fee must be a valid positive number",
+      });
+    }
+
     const selectedMovie = await Movie.findById(movie);
 
     if (!selectedMovie) {
@@ -151,13 +177,19 @@ export const createShowtime = async (req, res) => {
       });
     }
 
-    const finalTicketPrice =
-      Number(baseTicketPrice) + Number(threeDGlassesFee || 0);
+    const finalTicketPrice = parsedBaseTicketPrice + parsedThreeDGlassesFee;
 
     const seatAvailability = generateShowtimeSeats(
       selectedHall,
       finalTicketPrice
     );
+
+    if (!seatAvailability.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Selected hall does not have a valid seat layout",
+      });
+    }
 
     const showtime = await Showtime.create({
       movie,
@@ -165,14 +197,14 @@ export const createShowtime = async (req, res) => {
       showDate,
       startTime,
       endTime,
-      baseTicketPrice,
-      threeDGlassesFee,
+      baseTicketPrice: parsedBaseTicketPrice,
+      threeDGlassesFee: parsedThreeDGlassesFee,
       seatAvailability,
-      createdBy: req.user._id,
+      createdBy: req.user?._id,
     });
 
     const populatedShowtime = await Showtime.findById(showtime._id)
-      .populate("movie", "title poster genre language duration isActive")
+      .populate("movie", "title mainImage poster genre language duration isActive")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats")
       .populate("createdBy", "name email role");
 
@@ -231,7 +263,7 @@ export const getAllShowtimes = async (req, res) => {
     const skip = (currentPage - 1) * pageSize;
 
     let showtimes = await Showtime.find(query)
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage poster genre language duration")
       .populate("hall", "name screenType")
       .populate("createdBy", "name email role")
       .populate("updatedBy", "name email role")
@@ -279,7 +311,7 @@ export const getAllShowtimes = async (req, res) => {
 export const getSingleShowtime = async (req, res) => {
   try {
     const showtime = await Showtime.findById(req.params.id)
-      .populate("movie", "title poster genre language duration description")
+      .populate("movie", "title mainImage poster genre language duration description")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats")
       .populate("createdBy", "name email role")
       .populate("updatedBy", "name email role");
@@ -328,7 +360,7 @@ export const getPublicShowtimes = async (req, res) => {
     }
 
     const showtimes = await Showtime.find(query)
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage poster genre language duration")
       .populate("hall", "name screenType")
       .sort({ showDate: 1, startTime: 1 });
 
@@ -355,7 +387,7 @@ export const getPublicShowtimeDetails = async (req, res) => {
       isActive: true,
       status: "scheduled",
     })
-      .populate("movie", "title poster genre language duration description")
+      .populate("movie", "title mainImage poster genre language duration description")
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats");
 
     if (!showtime) {
@@ -475,15 +507,24 @@ export const updateShowtime = async (req, res) => {
       });
     }
 
-    const hallChanged = hall && hall.toString() !== showtime.hall.toString();
+    const movieChanged = movie && String(movie) !== String(showtime.movie);
+    const hallChanged = hall && String(hall) !== String(showtime.hall);
+    const dateChanged =
+      showDate && new Date(showDate).toDateString() !== new Date(showtime.showDate).toDateString();
+    const timeChanged =
+      startTime !== undefined ||
+      endTime !== undefined;
     const priceChanged =
       baseTicketPrice !== undefined || threeDGlassesFee !== undefined;
 
-    if ((hallChanged || priceChanged) && hasBookedOrReservedSeats(showtime)) {
+    const criticalChanged =
+      movieChanged || hallChanged || dateChanged || timeChanged || priceChanged;
+
+    if (criticalChanged && hasBookedOrReservedSeats(showtime)) {
       return res.status(400).json({
         success: false,
         message:
-          "Cannot change hall or ticket price after seats are booked or reserved",
+          "Cannot change movie, hall, date, time, or ticket price after seats are booked or reserved",
       });
     }
 
@@ -494,11 +535,29 @@ export const updateShowtime = async (req, res) => {
     showtime.endTime = newEndTime;
 
     if (baseTicketPrice !== undefined) {
-      showtime.baseTicketPrice = baseTicketPrice;
+      const parsedBaseTicketPrice = Number(baseTicketPrice);
+
+      if (Number.isNaN(parsedBaseTicketPrice) || parsedBaseTicketPrice < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Base ticket price must be a valid positive number",
+        });
+      }
+
+      showtime.baseTicketPrice = parsedBaseTicketPrice;
     }
 
     if (threeDGlassesFee !== undefined) {
-      showtime.threeDGlassesFee = threeDGlassesFee;
+      const parsedThreeDGlassesFee = Number(threeDGlassesFee);
+
+      if (Number.isNaN(parsedThreeDGlassesFee) || parsedThreeDGlassesFee < 0) {
+        return res.status(400).json({
+          success: false,
+          message: "3D glasses fee must be a valid positive number",
+        });
+      }
+
+      showtime.threeDGlassesFee = parsedThreeDGlassesFee;
     }
 
     if (hallChanged || priceChanged) {
@@ -512,12 +571,12 @@ export const updateShowtime = async (req, res) => {
       );
     }
 
-    showtime.updatedBy = req.user._id;
+    showtime.updatedBy = req.user?._id;
 
     await showtime.save();
 
     const updatedShowtime = await Showtime.findById(showtime._id)
-      .populate("movie", "title poster genre language duration")
+      .populate("movie", "title mainImage poster genre language duration")
       .populate("hall", "name screenType")
       .populate("updatedBy", "name email role");
 
@@ -558,7 +617,7 @@ export const cancelShowtime = async (req, res) => {
 
     showtime.status = "cancelled";
     showtime.isActive = false;
-    showtime.updatedBy = req.user._id;
+    showtime.updatedBy = req.user?._id;
 
     await showtime.save();
 
@@ -607,7 +666,7 @@ export const activateShowtime = async (req, res) => {
 
     showtime.status = "scheduled";
     showtime.isActive = true;
-    showtime.updatedBy = req.user._id;
+    showtime.updatedBy = req.user?._id;
 
     await showtime.save();
 
@@ -680,7 +739,7 @@ export const updateShowtimeSeatStatus = async (req, res) => {
     }
 
     selectedSeat.status = status;
-    showtime.updatedBy = req.user._id;
+    showtime.updatedBy = req.user?._id;
 
     await showtime.save();
 
@@ -696,6 +755,52 @@ export const updateShowtimeSeatStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while updating showtime seat status",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteShowtime = async (req, res) => {
+  try {
+    const showtime = await Showtime.findById(req.params.id);
+
+    if (!showtime) {
+      return res.status(404).json({
+        success: false,
+        message: "Showtime not found",
+      });
+    }
+
+    const bookingCount = await Booking.countDocuments({
+      showtime: showtime._id,
+    });
+
+    if (bookingCount > 0) {
+      showtime.isActive = false;
+      showtime.updatedBy = req.user?._id;
+
+      await showtime.save({ validateBeforeSave: false });
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "This showtime already has bookings. It was disabled instead of deleted to protect booking and ticket history.",
+        showtime,
+      });
+    }
+
+    await showtime.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Showtime deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete showtime error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting showtime",
       error: error.message,
     });
   }

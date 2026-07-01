@@ -1,6 +1,9 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import LoginPage from "./components/pages/auth/LoginPage";
+import RegisterPage from "./components/pages/auth/RegisterPage";
+import VerifyEmailPage from "./components/pages/auth/VerifyEmailPage";
+
 import ProtectedRoute from "./components/routes/ProtectedRoute";
 
 import DashboardRedirect from "./components/pages/dashboard/DashboardRedirect";
@@ -14,6 +17,8 @@ const App = () => {
       {/* Public routes */}
       <Route path="/" element={<Navigate to="/login" replace />} />
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/verify-email" element={<VerifyEmailPage />} />
 
       {/* Common protected dashboard redirect */}
       <Route element={<ProtectedRoute />}>

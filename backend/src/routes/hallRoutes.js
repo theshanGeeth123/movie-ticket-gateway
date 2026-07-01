@@ -1,4 +1,5 @@
 import express from "express";
+
 import {
   createHall,
   getAllHalls,
@@ -7,6 +8,7 @@ import {
   disableHall,
   enableHall,
   updateSeatStatus,
+  deleteHall,
 } from "../controllers/hallController.js";
 
 import {
@@ -23,11 +25,6 @@ router
   .post(authorizeRoles("admin"), createHall)
   .get(authorizeRoles("admin", "staff"), getAllHalls);
 
-router
-  .route("/:id")
-  .get(authorizeRoles("admin", "staff"), getSingleHall)
-  .put(authorizeRoles("admin"), updateHall);
-
 router.patch("/:id/disable", authorizeRoles("admin"), disableHall);
 
 router.patch("/:id/enable", authorizeRoles("admin"), enableHall);
@@ -37,5 +34,11 @@ router.patch(
   authorizeRoles("admin"),
   updateSeatStatus
 );
+
+router
+  .route("/:id")
+  .get(authorizeRoles("admin", "staff"), getSingleHall)
+  .put(authorizeRoles("admin"), updateHall)
+  .delete(authorizeRoles("admin"), deleteHall);
 
 export default router;

@@ -1,4 +1,35 @@
 import Hall from "../models/Hall.js";
+import Showtime from "../models/Showtime.js";
+
+const escapeRegex = (value = "") => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+};
+
+const parseFacilities = (facilities) => {
+  if (!facilities) return [];
+
+  if (Array.isArray(facilities)) {
+    return facilities;
+  }
+
+  try {
+    const parsed = JSON.parse(facilities);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return facilities
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  }
+};
+
+const hasLinkedShowtimes = async (hallId) => {
+  const count = await Showtime.countDocuments({
+    hall: hallId,
+  });
+
+  return count > 0;
+};
 
 export const createHall = async (req, res) => {
   try {
@@ -11,8 +42,32 @@ export const createHall = async (req, res) => {
       });
     }
 
+    const parsedTotalRows = Number(totalRows);
+    const parsedSeatsPerRow = Number(seatsPerRow);
+
+    if (Number.isNaN(parsedTotalRows) || parsedTotalRows <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Total rows must be a valid positive number",
+      });
+    }
+
+    if (Number.isNaN(parsedSeatsPerRow) || parsedSeatsPerRow <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Seats per row must be a valid positive number",
+      });
+    }
+
+    if (parsedTotalRows > 26) {
+      return res.status(400).json({
+        success: false,
+        message: "Total rows cannot be more than 26",
+      });
+    }
+
     const existingHall = await Hall.findOne({
-      name: { $regex: `^${name}$`, $options: "i" },
+      name: { $regex: `^${escapeRegex(name)}$`, $options: "i" },
     });
 
     if (existingHall) {
@@ -25,10 +80,10 @@ export const createHall = async (req, res) => {
     const hall = await Hall.create({
       name,
       screenType,
-      totalRows,
-      seatsPerRow,
-      facilities,
-      createdBy: req.user._id,
+      totalRows: parsedTotalRows,
+      seatsPerRow: parsedSeatsPerRow,
+      facilities: parseFacilities(facilities),
+      createdBy: req.user?._id,
     });
 
     return res.status(201).json({
@@ -152,10 +207,25 @@ export const updateHall = async (req, res) => {
 
     const { name, screenType, totalRows, seatsPerRow, facilities } = req.body;
 
+    const layoutChanging =
+      totalRows !== undefined || seatsPerRow !== undefined;
+
+    if (layoutChanging) {
+      const linkedShowtimes = await hasLinkedShowtimes(hall._id);
+
+      if (linkedShowtimes) {
+        return res.status(400).json({
+          success: false,
+          message:
+            "Cannot change hall seat layout because this hall already has showtimes. Disable this hall and create a new hall layout instead.",
+        });
+      }
+    }
+
     if (name && name !== hall.name) {
       const existingHall = await Hall.findOne({
         _id: { $ne: hall._id },
-        name: { $regex: `^${name}$`, $options: "i" },
+        name: { $regex: `^${escapeRegex(name)}$`, $options: "i" },
       });
 
       if (existingHall) {
@@ -169,11 +239,45 @@ export const updateHall = async (req, res) => {
     }
 
     if (screenType !== undefined) hall.screenType = screenType;
-    if (totalRows !== undefined) hall.totalRows = totalRows;
-    if (seatsPerRow !== undefined) hall.seatsPerRow = seatsPerRow;
-    if (facilities !== undefined) hall.facilities = facilities;
 
-    hall.updatedBy = req.user._id;
+    if (totalRows !== undefined) {
+      const parsedTotalRows = Number(totalRows);
+
+      if (Number.isNaN(parsedTotalRows) || parsedTotalRows <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Total rows must be a valid positive number",
+        });
+      }
+
+      if (parsedTotalRows > 26) {
+        return res.status(400).json({
+          success: false,
+          message: "Total rows cannot be more than 26",
+        });
+      }
+
+      hall.totalRows = parsedTotalRows;
+    }
+
+    if (seatsPerRow !== undefined) {
+      const parsedSeatsPerRow = Number(seatsPerRow);
+
+      if (Number.isNaN(parsedSeatsPerRow) || parsedSeatsPerRow <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Seats per row must be a valid positive number",
+        });
+      }
+
+      hall.seatsPerRow = parsedSeatsPerRow;
+    }
+
+    if (facilities !== undefined) {
+      hall.facilities = parseFacilities(facilities);
+    }
+
+    hall.updatedBy = req.user?._id;
 
     const updatedHall = await hall.save();
 
@@ -205,7 +309,7 @@ export const disableHall = async (req, res) => {
     }
 
     hall.isActive = false;
-    hall.updatedBy = req.user._id;
+    hall.updatedBy = req.user?._id;
 
     await hall.save();
 
@@ -237,7 +341,7 @@ export const enableHall = async (req, res) => {
     }
 
     hall.isActive = true;
-    hall.updatedBy = req.user._id;
+    hall.updatedBy = req.user?._id;
 
     await hall.save();
 
@@ -298,7 +402,7 @@ export const updateSeatStatus = async (req, res) => {
     }
 
     selectedSeat.isActive = isActive;
-    hall.updatedBy = req.user._id;
+    hall.updatedBy = req.user?._id;
 
     await hall.save();
 
@@ -314,6 +418,52 @@ export const updateSeatStatus = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Server error while updating seat status",
+      error: error.message,
+    });
+  }
+};
+
+export const deleteHall = async (req, res) => {
+  try {
+    const hall = await Hall.findById(req.params.id);
+
+    if (!hall) {
+      return res.status(404).json({
+        success: false,
+        message: "Hall not found",
+      });
+    }
+
+    const showtimeCount = await Showtime.countDocuments({
+      hall: hall._id,
+    });
+
+    if (showtimeCount > 0) {
+      hall.isActive = false;
+      hall.updatedBy = req.user?._id;
+
+      await hall.save({ validateBeforeSave: false });
+
+      return res.status(400).json({
+        success: false,
+        message:
+          "This hall already has showtimes. It was disabled instead of deleted to protect booking history.",
+        hall,
+      });
+    }
+
+    await hall.deleteOne();
+
+    return res.status(200).json({
+      success: true,
+      message: "Hall deleted successfully",
+    });
+  } catch (error) {
+    console.error("Delete hall error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Server error while deleting hall",
       error: error.message,
     });
   }

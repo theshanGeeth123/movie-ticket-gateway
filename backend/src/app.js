@@ -16,6 +16,7 @@ import ticketRoutes from "./routes/ticketRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 import { notFound, errorHandler } from "./middlewares/errorMiddleware.js";
+import maintenanceRoutes from "./routes/maintenanceRoutes.js";
 
 const app = express();
 
@@ -59,6 +60,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/maintenance", maintenanceRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

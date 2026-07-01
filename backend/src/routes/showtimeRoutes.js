@@ -10,9 +10,13 @@ import {
   cancelShowtime,
   activateShowtime,
   updateShowtimeSeatStatus,
+  deleteShowtime,
 } from "../controllers/showtimeController.js";
 
-import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
+import {
+  protect,
+  authorizeRoles,
+} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -20,7 +24,8 @@ const router = express.Router();
 |--------------------------------------------------------------------------
 | Public routes
 |--------------------------------------------------------------------------
-| Customers can view available showtimes without login.
+| These routes are for customers/visitors to view available showtimes.
+| Keep public routes before router.use(protect).
 */
 router.get("/public", getPublicShowtimes);
 router.get("/public/:id", getPublicShowtimeDetails);
@@ -29,7 +34,6 @@ router.get("/public/:id", getPublicShowtimeDetails);
 |--------------------------------------------------------------------------
 | Protected routes
 |--------------------------------------------------------------------------
-| Admin and staff can manage/view showtimes.
 */
 router.use(protect);
 
@@ -38,19 +42,28 @@ router
   .post(authorizeRoles("admin"), createShowtime)
   .get(authorizeRoles("admin", "staff"), getAllShowtimes);
 
-router
-  .route("/:id")
-  .get(authorizeRoles("admin", "staff"), getSingleShowtime)
-  .put(authorizeRoles("admin"), updateShowtime);
+router.patch(
+  "/:id/cancel",
+  authorizeRoles("admin"),
+  cancelShowtime
+);
 
-router.patch("/:id/cancel", authorizeRoles("admin"), cancelShowtime);
-
-router.patch("/:id/activate", authorizeRoles("admin"), activateShowtime);
+router.patch(
+  "/:id/activate",
+  authorizeRoles("admin"),
+  activateShowtime
+);
 
 router.patch(
   "/:id/seats/:seatCode/status",
   authorizeRoles("admin"),
   updateShowtimeSeatStatus
 );
+
+router
+  .route("/:id")
+  .get(authorizeRoles("admin", "staff"), getSingleShowtime)
+  .put(authorizeRoles("admin"), updateShowtime)
+  .delete(authorizeRoles("admin"), deleteShowtime);
 
 export default router;

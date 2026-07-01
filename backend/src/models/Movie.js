@@ -1,5 +1,20 @@
 import mongoose from "mongoose";
 
+const movieImageSchema = new mongoose.Schema(
+  {
+    url: {
+      type: String,
+      required: true,
+    },
+
+    publicId: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false }
+);
+
 const movieSchema = new mongoose.Schema(
   {
     title: {
@@ -14,61 +29,80 @@ const movieSchema = new mongoose.Schema(
       trim: true,
     },
 
+    genre: {
+      type: String,
+      required: [true, "Movie genre is required"],
+      trim: true,
+    },
+
     language: {
       type: String,
       required: [true, "Movie language is required"],
       trim: true,
     },
 
-    genre: {
-      type: [String],
-      required: [true, "At least one genre is required"],
-      default: [],
-    },
-
-    durationMinutes: {
+    duration: {
       type: Number,
       required: [true, "Movie duration is required"],
-      min: [1, "Duration must be greater than 0"],
-    },
-
-    movieType: {
-      type: String,
-      enum: ["2D", "3D"],
-      default: "2D",
-    },
-
-    glassesFeeEnabled: {
-      type: Boolean,
-      default: false,
-    },
-
-    glassesFee: {
-      type: Number,
-      default: 0,
-      min: [0, "Glasses fee cannot be negative"],
-    },
-
-    posterImage: {
-      type: String,
-      default: "",
-    },
-
-    trailerUrl: {
-      type: String,
-      default: "",
+      min: [1, "Duration must be at least 1 minute"],
     },
 
     releaseDate: {
       type: Date,
-      required: [true, "Release date is required"],
     },
 
-    status: {
+    director: {
       type: String,
-      enum: ["Now Showing", "Coming Soon", "Ended", "Disabled"],
-      default: "Coming Soon",
+      trim: true,
     },
+
+    cast: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    ageRating: {
+      type: String,
+      enum: ["G", "PG", "PG-13", "R", "18+"],
+      default: "PG",
+    },
+
+    trailerUrl: {
+      type: String,
+      trim: true,
+    },
+
+    format: {
+      type: String,
+      enum: ["2D", "3D", "2D/3D"],
+      default: "2D",
+    },
+
+    is3D: {
+      type: Boolean,
+      default: false,
+    },
+
+    threeDGlassesFee: {
+      type: Number,
+      default: 0,
+      min: [0, "3D glasses fee cannot be negative"],
+    },
+
+    mainImage: {
+      url: {
+        type: String,
+        default: "",
+      },
+      publicId: {
+        type: String,
+        default: "",
+      },
+    },
+
+    galleryImages: [movieImageSchema],
 
     isActive: {
       type: Boolean,
@@ -89,17 +123,6 @@ const movieSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
-
-movieSchema.pre("save", function () {
-  if (this.movieType === "2D") {
-    this.glassesFeeEnabled = false;
-    this.glassesFee = 0;
-  }
-
-  if (this.movieType === "3D" && !this.glassesFeeEnabled) {
-    this.glassesFee = 0;
-  }
-});
 
 const Movie = mongoose.model("Movie", movieSchema);
 
