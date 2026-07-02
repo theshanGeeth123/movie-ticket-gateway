@@ -2,12 +2,17 @@ import express from "express";
 
 import {
   createStripePaymentIntent,
+  confirmStripePayment,
+  failStripePayment,
   confirmDemoPayment,
   failDemoPayment,
   getBookingPaymentStatus,
 } from "../controllers/paymentController.js";
 
-import { protect, authorizeRoles } from "../middlewares/authMiddleware.js";
+import {
+  protect,
+  authorizeRoles,
+} from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -17,6 +22,18 @@ router.post(
   "/create-payment-intent",
   authorizeRoles("customer"),
   createStripePaymentIntent
+);
+
+router.post(
+  "/confirm-stripe-payment",
+  authorizeRoles("customer"),
+  confirmStripePayment
+);
+
+router.post(
+  "/fail-stripe-payment",
+  authorizeRoles("customer"),
+  failStripePayment
 );
 
 router.post(
