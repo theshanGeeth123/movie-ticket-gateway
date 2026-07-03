@@ -34,6 +34,8 @@ import BookingsPage from "./pages/shared/BookingsPage";
 import TicketsPage from "./pages/shared/TicketsPage";
 import TicketDetailPage from "./pages/shared/TicketDetailPage";
 
+import CustomerShowtimesPage from "./pages/customer/CustomerShowtimesPage";
+
 const App = () => (
   <Routes>
     <Route element={<PublicLayout />}>
@@ -68,7 +70,10 @@ const App = () => (
         <Route path="dashboard" element={<CustomerDashboardPage />} />
         <Route path="bookings" element={<BookingsPage scope="customer" />} />
         <Route path="tickets" element={<TicketsPage scope="customer" />} />
+        <Route path="/customer" element={<DashboardLayout />}></Route>
+        <Route path="showtimes" element={<CustomerShowtimesPage />} />
       </Route>
+      
     </Route>
 
     <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>

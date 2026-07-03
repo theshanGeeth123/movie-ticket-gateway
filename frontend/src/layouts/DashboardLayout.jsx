@@ -25,6 +25,7 @@ const staffLinks = [
 const customerLinks = [
   ["/customer/dashboard", "Overview", Home],
   ["/movies", "Browse movies", Clapperboard],
+  ["/customer/showtimes", "Find showtimes", CalendarDays],
   ["/customer/bookings", "My bookings", CreditCard],
   ["/customer/tickets", "My tickets", Ticket],
 ];
