@@ -20,13 +20,17 @@ const generateUniqueTicketNumber = async () => {
   return ticketNumber;
 };
 
+const getId = (value) => {
+  return value?._id || value;
+};
+
 const buildQrCodeData = ({ ticketNumber, booking }) => {
   return JSON.stringify({
+    system: "MOVIE_GATEWAY_TICKET",
     ticketNumber,
-    bookingId: booking._id.toString(),
     bookingReference: booking.bookingReference,
-    customerId: booking.customer.toString(),
-    showtimeId: booking.showtime.toString(),
+    ticketStatus: "active",
+    paymentStatus: booking.paymentStatus,
   });
 };
 
@@ -37,7 +41,11 @@ export const createTicketForBooking = async (bookingId) => {
     return existingTicket;
   }
 
-  const booking = await Booking.findById(bookingId);
+  const booking = await Booking.findById(bookingId)
+    .populate("customer", "name email role")
+    .populate("movie", "title mainImage galleryImages genre language")
+    .populate("hall", "name screenType")
+    .populate("showtime", "showDate startTime endTime finalTicketPrice");
 
   if (!booking) {
     throw new Error("Booking not found while creating ticket");
@@ -62,10 +70,10 @@ export const createTicketForBooking = async (bookingId) => {
     ticketNumber,
     booking: booking._id,
     bookingReference: booking.bookingReference,
-    customer: booking.customer,
-    movie: booking.movie,
-    hall: booking.hall,
-    showtime: booking.showtime,
+    customer: getId(booking.customer),
+    movie: getId(booking.movie),
+    hall: getId(booking.hall),
+    showtime: getId(booking.showtime),
     seats: booking.seats,
     ticketCount: booking.ticketCount,
     totalAmount: booking.totalAmount,

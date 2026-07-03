@@ -408,6 +408,13 @@ export const sendTicketEmailManually = async (req, res) => {
       });
     }
 
+    if (!ticket.customer?.email) {
+      return res.status(400).json({
+        success: false,
+        message: "Customer email address not found for this ticket",
+      });
+    }
+
     const isOwner = ticket.customer._id.toString() === req.user._id.toString();
 
     const isAdminOrStaff =
@@ -431,7 +438,7 @@ export const sendTicketEmailManually = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "Ticket email sent successfully",
+      message: `Ticket email sent successfully to ${ticket.customer.email}`,
       email: emailResult,
     });
   } catch (error) {
@@ -439,7 +446,8 @@ export const sendTicketEmailManually = async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      message: "Server error while sending ticket email",
+      message:
+        error.message || "Server error while sending ticket email",
       error: error.message,
     });
   }
