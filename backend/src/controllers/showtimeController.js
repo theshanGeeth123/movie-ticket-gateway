@@ -17,6 +17,113 @@ const getDayRange = (dateValue) => {
   return { start, end };
 };
 
+const getTodayRange = () => {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+
+  return { start, end };
+};
+
+const getCurrentTimeString = () => {
+  const now = new Date();
+
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${hours}:${minutes}`;
+};
+
+const isSameDate = (dateOne, dateTwo) => {
+  const first = new Date(dateOne);
+  const second = new Date(dateTwo);
+
+  return (
+    first.getFullYear() === second.getFullYear() &&
+    first.getMonth() === second.getMonth() &&
+    first.getDate() === second.getDate()
+  );
+};
+
+const isSelectedDateInPast = (dateValue) => {
+  const { start: todayStart } = getTodayRange();
+
+  const selectedDate = new Date(dateValue);
+  selectedDate.setHours(0, 0, 0, 0);
+
+  return selectedDate < todayStart;
+};
+
+const isShowtimeExpired = (showtime) => {
+  const { start: todayStart } = getTodayRange();
+  const currentTime = getCurrentTimeString();
+
+  const showDate = new Date(showtime.showDate);
+  showDate.setHours(0, 0, 0, 0);
+
+  if (showDate < todayStart) {
+    return true;
+  }
+
+  if (isSameDate(showDate, todayStart) && showtime.startTime < currentTime) {
+    return true;
+  }
+
+  return false;
+};
+
+const buildPublicFutureShowtimeQuery = ({ movie, date }) => {
+  const { start: todayStart, end: todayEnd } = getTodayRange();
+  const currentTime = getCurrentTimeString();
+
+  const query = {
+    isActive: true,
+    status: "scheduled",
+  };
+
+  if (movie) {
+    query.movie = movie;
+  }
+
+  if (date) {
+    const { start, end } = getDayRange(date);
+
+    query.showDate = {
+      $gte: start,
+      $lte: end,
+    };
+
+    if (isSameDate(start, todayStart)) {
+      query.startTime = {
+        $gte: currentTime,
+      };
+    }
+
+    return query;
+  }
+
+  query.$or = [
+    {
+      showDate: {
+        $gt: todayEnd,
+      },
+    },
+    {
+      showDate: {
+        $gte: todayStart,
+        $lte: todayEnd,
+      },
+      startTime: {
+        $gte: currentTime,
+      },
+    },
+  ];
+
+  return query;
+};
+
 const generateShowtimeSeats = (hall, finalTicketPrice) => {
   if (!hall?.seatLayout || !Array.isArray(hall.seatLayout)) {
     return [];
@@ -342,22 +449,18 @@ export const getPublicShowtimes = async (req, res) => {
   try {
     const { movie, date } = req.query;
 
-    const query = {
-      isActive: true,
-      status: "scheduled",
-    };
-
-    if (movie) {
-      query.movie = movie;
+    if (date && isSelectedDateInPast(date)) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        showtimes: [],
+      });
     }
 
-    if (date) {
-      const { start, end } = getDayRange(date);
-      query.showDate = {
-        $gte: start,
-        $lte: end,
-      };
-    }
+    const query = buildPublicFutureShowtimeQuery({
+      movie,
+      date,
+    });
 
     const showtimes = await Showtime.find(query)
       .populate("movie", "title mainImage galleryImages genre language duration")
@@ -387,13 +490,23 @@ export const getPublicShowtimeDetails = async (req, res) => {
       isActive: true,
       status: "scheduled",
     })
-      .populate("movie", "title mainImage galleryImages genre language duration description")
+      .populate(
+        "movie",
+        "title mainImage galleryImages genre language duration description"
+      )
       .populate("hall", "name screenType totalRows seatsPerRow totalSeats");
 
     if (!showtime) {
       return res.status(404).json({
         success: false,
         message: "Showtime not found",
+      });
+    }
+
+    if (isShowtimeExpired(showtime)) {
+      return res.status(400).json({
+        success: false,
+        message: "This showtime is no longer available for booking",
       });
     }
 
